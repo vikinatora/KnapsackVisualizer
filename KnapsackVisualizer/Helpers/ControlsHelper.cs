@@ -24,6 +24,18 @@ namespace KnapsackVisualizer.Helpers
             return textBox;
         }
 
+        public static RichTextBox CreateRichTextbox(Size size, Point location, string name, string value = "", bool isReadOnly = false)
+        {
+            RichTextBox textBox = new RichTextBox();
+            textBox.Size = size;
+            textBox.Location = location;
+            textBox.Name = name;
+            textBox.Text = value;
+            textBox.ReadOnly = isReadOnly;
+
+            return textBox;
+        }
+
         public static Label CreateLabel(Size size, Point location, string name, string value = "", ContentAlignment textAlign = ContentAlignment.MiddleLeft)
         {
             Label label = new Label();
@@ -34,6 +46,17 @@ namespace KnapsackVisualizer.Helpers
             label.TextAlign = textAlign;
 
             return label;
+        }
+
+        public static Button CreateButton(Size size, Point location, string name, string text, EventHandler eventHandler)
+        {
+            Button button = new Button();
+            button.Size = size;
+            button.Name = name;
+            button.Text = text;
+            button.Location = location;
+            button.Click += eventHandler;
+            return button;
         }
 
         public static Control GetBagSlot(int row, int col, Control.ControlCollection controls)

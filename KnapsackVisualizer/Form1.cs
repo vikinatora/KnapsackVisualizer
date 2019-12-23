@@ -28,13 +28,13 @@ namespace KnapsackVisualizer
             this.Weights = new List<Control>();
             InitializeComponent();
 
-            //Form vizualizer = new Vizualizer(
-            //    values: new int[] { 1, 4, 5, 7 },
-            //    weights: new int[] { 1, 3, 4, 5 },
-            //    bagCapacity: 7
-            //);
-            //vizualizer.Show();
-            //this.Hide();
+            Form vizualizer = new Vizualizer(
+                values: new int[] { 1, 4, 5, 7 },
+                weights: new int[] { 1, 3, 4, 5 },
+                bagCapacity: 7
+            );
+            vizualizer.Show();
+            this.Hide();
         }
 
         private void setItemsButton_Click(object sender, EventArgs e)

@@ -20,15 +20,17 @@ namespace KnapsackVisualizer
         private Control currentBagSlot;
         private Control currentItemSlot;
         private Control currentWeightSlot;
+        private Control firstComparedSlot;
+        private Control secondComparedSlot;
+        private RichTextBox tooltip;
+        private bool hasReadBriefing;
         private int currentRow;
         private int currentCol;
-        private int[,] bag;
 
         public Vizualizer(int bagCapacity, int[] values, int[] weights)
         {
             this.xBagDimension = bagCapacity + 1;
             this.yBagDimension = values.Length + 1;
-            this.bag = new int[this.yBagDimension, this.xBagDimension];
             this.bagCapacity = bagCapacity;
             this.values = values;
             this.weights = weights;
@@ -39,7 +41,7 @@ namespace KnapsackVisualizer
             this.renderTables();
             this.Width = 500;
             this.Height = 500;
-
+            this.hasReadBriefing = false;
             InitializeComponent();
         }
 
@@ -49,12 +51,21 @@ namespace KnapsackVisualizer
             {
                 this.currentBagSlot.BackColor = SystemColors.Control;
             }
+            if (this.firstComparedSlot != null)
+            {
+                this.firstComparedSlot.BackColor = SystemColors.Control;
+            }
+            if (this.secondComparedSlot != null)
+            {
+                this.secondComparedSlot.BackColor = SystemColors.Control;
+            }
             if (this.currentRow == 0 || this.currentCol == 0)
             {
-                //Here we go through the first row, where everything is 0
                 this.currentBagSlot = ControlsHelper.GetBagSlot(this.currentRow, this.currentCol, this.Controls);
                 this.currentBagSlot.BackColor = Color.Red;
-                this.bag[this.currentRow, this.currentCol] = 0;
+                this.currentBagSlot = ControlsHelper.GetBagSlot(this.currentRow, this.currentCol, this.Controls);
+                this.currentBagSlot.Text = 0.ToString();
+                this.tooltip.Text = "When either the row or the column is 0, then the value of the items is also 0";
             }
             else if (weights[this.currentRow - 1] <= this.currentCol)
             {
@@ -63,23 +74,32 @@ namespace KnapsackVisualizer
                 this.currentWeightSlot = ControlsHelper.GetWeightSlot(this.currentRow - 1, this.Controls);
                 this.currentWeightSlot.BackColor = Color.Blue;
 
-                //TODO: Track A and B slots. Implement tooltips. 
-                int A = values[this.currentRow - 1] + this.bag[this.currentRow - 1, this.currentCol - weights[this.currentRow - 1]];
-                int B = this.bag[this.currentRow - 1, this.currentCol];
+                //TODO: Implement tooltips. 
+                this.firstComparedSlot = ControlsHelper.GetBagSlot(this.currentRow - 1, this.currentCol - weights[this.currentRow - 1], this.Controls);
+                this.secondComparedSlot = ControlsHelper.GetBagSlot(this.currentRow - 1, this.currentCol, this.Controls);
+                this.firstComparedSlot.BackColor = Color.Blue;
+                this.secondComparedSlot.BackColor = Color.Blue;
+
+                int A = values[this.currentRow - 1] + int.Parse(this.firstComparedSlot.Text);
+                int B = int.Parse(this.secondComparedSlot.Text);
                 int max = Math.Max(A, B);
 
                 this.currentBagSlot = ControlsHelper.GetBagSlot(this.currentRow, this.currentCol, this.Controls);
                 this.currentBagSlot.BackColor = Color.Red;
                 this.currentBagSlot.Text = Math.Max(A, B).ToString();
-                this.bag[this.currentRow, this.currentCol] = Math.Max(A, B);
+                this.tooltip.Text = $"In this case the weight of the current item is less than or equal to the capacity of the bag. We have to now figure out what is the biggest value of items can we achieve.\r\n" +
+                    $"We take the value of the current item and compare it with itself plus the added most valuable item using the remaining capacity of the bag. \r\n" +
+                    $"In our case: the current value of the item is {this.currentItemSlot.Text}\r\n" +
+                    $"However the combined value of the current item and the one that can fit in the remaining capacity of {this.currentCol - weights[this.currentRow - 1]} is {this.firstComparedSlot.Text}.\r\n" +
+                    $"So we put {max} in the table.";
             }
             else
             {
-                //Here we leave the current item from our collection
-                this.bag[this.currentRow, this.currentCol] = this.bag[this.currentRow - 1, this.currentCol];
                 this.currentBagSlot = ControlsHelper.GetBagSlot(this.currentRow, this.currentCol, this.Controls);
                 this.currentBagSlot.BackColor = Color.Red;
-                this.currentBagSlot.Text = this.bag[this.currentRow, this.currentCol].ToString();
+                Control bagSlot = ControlsHelper.GetBagSlot(this.currentRow - 1, this.currentCol, this.Controls);
+                this.currentBagSlot.Text = bagSlot.Text;
+                this.tooltip.Text = $"The current weight of the item is bigger than the capacity of the bag. That's why we have no other choice than to take the value from the previous row ({bagSlot.Text}).";
             }
 
             if (this.currentCol < capacity)
@@ -95,14 +115,13 @@ namespace KnapsackVisualizer
                 {
                     this.currentWeightSlot.BackColor = SystemColors.Control;
                 }
-
                 this.currentRow++;
                 this.currentCol = 0;
             } else if(this.currentCol == capacity  && this.currentRow == itemsCount)
             {
                 this.currentItemSlot = ControlsHelper.GetBagSlot(itemsCount, capacity, this.Controls);
                 this.currentItemSlot.BackColor = Color.Green;
-                Console.WriteLine($"Best value we can get is: {this.bag[itemsCount, capacity]}");
+                this.tooltip.Text = $"After iterating over all the possible combinations, the best possible scenario for us is located on the row that matches the number of items the bag can carry ({itemsCount}) and for the column we use the capacity of the bag({capacity}). This means that the best value we can get from the scenario is {currentItemSlot.Text}";
             }
         }
         private void renderTables()
@@ -112,12 +131,11 @@ namespace KnapsackVisualizer
             this.itemsStartY += 45;
             this.renderWeights();
 
-            var startBtn = new Button();
-            startBtn.Name = "startVizualization";
-            startBtn.Location = new Point(300, 300);
-            startBtn.Click += new EventHandler(startVizualization_Click);
-            startBtn.Visible = true;
-
+            Button startBtn = ControlsHelper.CreateButton(new Size(100, 50), new Point(550, 20), "startVizualization", "Start visualization", new EventHandler(startVizualization_Click));
+            RichTextBox tooltip = ControlsHelper.CreateRichTextbox(new Size(400, 150), new Point(this.itemsStartX * this.yBagDimension + 50  + this.itemsMargin * 3, 100), "tooltip", isReadOnly: true);
+            this.tooltip = tooltip;
+            tooltip.BackColor = Color.White;
+            this.Controls.AddRange(new Control[] { startBtn, tooltip });
         }
 
         private void renderWeights()
@@ -193,7 +211,23 @@ namespace KnapsackVisualizer
 
         private void startVizualization_Click(object sender, EventArgs e)
         {
-            this.Visualize(bagCapacity, weights, values, values.Length);
+            if(!this.hasReadBriefing)
+            {
+                this.tooltip.Text = $"You most likely don't understand anything from these tables and you look here for some kind of explanation. That's why I'm here. I'm the tooltip that will help you understand what is happening as the algorithm goes on. \r\n" +
+                    $"Let me give you are brief explanation before jumping in to the algorithm. \r\n " +
+                    $"The big table to the left is your bag. It was constructed using the values you provided for the capacity of the bag for the rows and  the number of items it can carry for the columns. \r\n" +
+                    "Why did I do it? Because one of the algorithms used to solve the problem uses this kind of table and evaluates out biggest value the bag can carry for every pair of  capacity - number of items. \r\n" +
+                    "In the end you just have to look at the value that matches your pair and you're ready!" +
+                    "The two rows under the big table represent the items and their respective values so you can understand even better what's happening with every step of the algorithm. \r\n." +
+                    "Alles klar? Press the button to go to the first step.";
+                this.hasReadBriefing = true;
+            }
+            else
+            {
+                this.Visualize(bagCapacity, weights, values, values.Length);
+            }
+
         }
+
     }
 }
